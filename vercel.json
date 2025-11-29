@@ -3,11 +3,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_STORY_PROTOCOL_API_KEY": "@story_protocol_api_key",
-    "NEXT_PUBLIC_IPFS_GATEWAY": "https://ipfs.io/ipfs/",
-    "NEXT_PUBLIC_ARWEAVE_GATEWAY": "https://arweave.net/"
-  }
+  "regions": ["iad1"]
 }
 
