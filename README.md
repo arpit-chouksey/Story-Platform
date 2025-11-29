@@ -202,16 +202,20 @@ CMD ["npm", "start"]
 
 ### Story Protocol Integration
 
-Update `lib/story-protocol.ts` with your actual Story Protocol SDK implementation:
+✅ **The project now uses the official Story Protocol SDK!**
 
-```typescript
-import { StoryProtocolSDK } from '@story-protocol/core-sdk'
+The SDK is already integrated in `lib/story-protocol.ts`. To configure:
 
-export const storyProtocol = new StoryProtocolSDK({
-  apiKey: process.env.NEXT_PUBLIC_STORY_PROTOCOL_API_KEY,
-  // Add other configuration
-})
-```
+1. **Set environment variables** (see `.env.example`):
+   ```env
+   NEXT_PUBLIC_RPC_URL=https://aeneid-rpc.story.foundation
+   NEXT_PUBLIC_CHAIN_ID=aeneid
+   WALLET_PRIVATE_KEY=0x... (optional, for server-side)
+   ```
+
+2. **Connect wallet** (client-side) or set private key (server-side)
+
+3. **See [STORY_PROTOCOL_SETUP.md](./STORY_PROTOCOL_SETUP.md)** for detailed setup instructions
 
 ### IPFS Configuration
 

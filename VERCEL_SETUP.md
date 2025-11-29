@@ -37,17 +37,20 @@ git push origin main
 
 | Variable Name | Value | Description |
 |--------------|-------|-------------|
-| `NEXT_PUBLIC_STORY_PROTOCOL_API_KEY` | `your_actual_api_key` | Your Story Protocol API key (or leave as placeholder) |
+| `NEXT_PUBLIC_RPC_URL` | `https://aeneid-rpc.story.foundation` | Story Protocol RPC endpoint (or your custom RPC) |
+| `NEXT_PUBLIC_CHAIN_ID` | `aeneid` | Story Protocol chain ID (testnet: 'aeneid', mainnet: check docs) |
 | `NEXT_PUBLIC_IPFS_GATEWAY` | `https://ipfs.io/ipfs/` | IPFS gateway URL |
 | `NEXT_PUBLIC_ARWEAVE_GATEWAY` | `https://arweave.net/` | Arweave gateway URL |
 
-#### Optional Variables:
+#### Optional Variables (for server-side operations):
 
 | Variable Name | Value | Description |
 |--------------|-------|-------------|
-| `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | `your_project_id` | WalletConnect project ID (if using wallet features) |
-| `NEXT_PUBLIC_CHAIN_ID` | `1` | Ethereum chain ID |
-| `NEXT_PUBLIC_RPC_URL` | `your_rpc_url` | RPC endpoint URL |
+| `WALLET_PRIVATE_KEY` | `0x...` | Private key for server-side operations (keep secret!) |
+| `RPC_PROVIDER_URL` | `your_rpc_url` | Alternative RPC URL (server-side) |
+| `NEXT_PUBLIC_IP_ORG_ID` | `1` | Default IP Organization ID |
+| `NEXT_PUBLIC_LICENSE_TEMPLATE_ID` | `1` | Default License Template ID |
+| `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | `your_project_id` | WalletConnect project ID (if using WalletConnect) |
 
 ### 4. Deploy
 

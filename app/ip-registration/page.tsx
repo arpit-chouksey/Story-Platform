@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { Upload, FileText, CheckCircle2, Loader2, Hash, Link as LinkIcon } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Upload, FileText, CheckCircle2, Loader2, Hash, Link as LinkIcon, Wallet, AlertCircle } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { uploadFile } from '@/lib/storage'
 import { storyProtocol, type IPAsset } from '@/lib/story-protocol'
+import { initStoryClientWithWallet } from '@/lib/wallet-client'
 
 type Step = 'upload' | 'metadata' | 'registering' | 'complete'
 
@@ -20,6 +21,55 @@ export default function IPRegistrationPage() {
   })
   const [registeredIP, setRegisteredIP] = useState<IPAsset | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [walletAddress, setWalletAddress] = useState<string>('')
+  const [error, setError] = useState<string>('')
+  const [isConnecting, setIsConnecting] = useState(false)
+
+  useEffect(() => {
+    // Check if wallet is already connected
+    if (typeof window !== 'undefined' && window.ethereum) {
+      window.ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
+        if (accounts.length > 0) {
+          setWalletAddress(accounts[0])
+          // Initialize client if not already initialized
+          initStoryClientWithWallet()
+        }
+      })
+    }
+  }, [])
+
+  const connectWallet = async () => {
+    setIsConnecting(true)
+    setError('')
+    
+    // Check if wallet is available
+    if (typeof window === 'undefined' || !window.ethereum) {
+      setError('No Web3 wallet found. Please install MetaMask or another Web3 wallet extension.')
+      setIsConnecting(false)
+      return
+    }
+
+    try {
+      const client = await initStoryClientWithWallet()
+      
+      // Get the connected account
+      if (typeof window !== 'undefined' && window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        if (accounts && accounts.length > 0) {
+          setWalletAddress(accounts[0])
+          console.log('Wallet connected successfully:', accounts[0])
+        } else {
+          throw new Error('No accounts found after connection')
+        }
+      }
+    } catch (error: any) {
+      console.error('Wallet connection error:', error)
+      const errorMessage = error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and try again.'
+      setError(errorMessage)
+    } finally {
+      setIsConnecting(false)
+    }
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -41,10 +91,34 @@ export default function IPRegistrationPage() {
   const handleRegister = async () => {
     if (!file) return
 
+    // Check if wallet is connected
+    if (!walletAddress) {
+      setError('Please connect your wallet first')
+      await connectWallet()
+      return
+    }
+
     setIsProcessing(true)
     setStep('registering')
+    setError('')
 
     try {
+      // Ensure client is initialized
+      if (!storyProtocol.client) {
+        try {
+          await initStoryClientWithWallet()
+          // Update wallet address after connection
+          if (typeof window !== 'undefined' && window.ethereum) {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+            if (accounts && accounts.length > 0) {
+              setWalletAddress(accounts[0])
+            }
+          }
+        } catch (error: any) {
+          throw new Error(`Failed to initialize Story Protocol client: ${error.message || 'Please connect your wallet'}`)
+        }
+      }
+
       // Upload to IPFS/Arweave
       const storageResult = await uploadFile(file)
 
@@ -60,14 +134,14 @@ export default function IPRegistrationPage() {
           tags: metadata.tags.split(',').map(t => t.trim()).filter(Boolean),
           license: metadata.license,
         },
-        owner: '0x' + '0'.repeat(40), // Mock address
+        owner: walletAddress,
       })
 
       setRegisteredIP(ipAsset)
       setStep('complete')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error)
-      alert('Failed to register IP. Please try again.')
+      setError(error.message || 'Failed to register IP. Please make sure your wallet is connected and you have sufficient funds.')
       setStep('metadata')
     } finally {
       setIsProcessing(false)
@@ -135,6 +209,37 @@ export default function IPRegistrationPage() {
               <p className="text-sm text-gray-500">
                 Supports: Images, Audio, Video, PDF, Text, Code
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Wallet Connection Warning */}
+        {!walletAddress && (
+          <div className="card bg-vercel-gray-950 border-vercel-gray-800 mb-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-400" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-white mb-1">Wallet Not Connected</p>
+                <p className="text-xs text-vercel-gray-400">Connect your wallet to register IP assets on Story Protocol</p>
+              </div>
+              <button
+                onClick={connectWallet}
+                disabled={isConnecting}
+                className="btn-primary text-sm flex items-center gap-2"
+              >
+                <Wallet className="w-4 h-4" />
+                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="card bg-red-500/10 border-red-500/20 mb-6">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertCircle className="w-5 h-5" />
+              <p className="text-sm">{error}</p>
             </div>
           </div>
         )}

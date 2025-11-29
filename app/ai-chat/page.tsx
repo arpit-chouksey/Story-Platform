@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Sparkles, CheckCircle2, Loader2, ToggleLeft, ToggleRight, History, GitBranch } from 'lucide-react'
 import { storyProtocol, type IPAsset } from '@/lib/story-protocol'
+import { generateAIResponse } from '@/lib/ai'
+import { initStoryClientWithWallet } from '@/lib/wallet-client'
 
 interface Message {
   id: string
@@ -46,12 +48,13 @@ export default function AIChatPage() {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const userInput = input
     setInput('')
     setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(async () => {
-      const aiResponse = `This is a generated response to: "${input}". In a real implementation, this would come from an AI model like GPT-4 or Claude. The response can be automatically registered as IP if the toggle is enabled.`
+    try {
+      // Get real AI response
+      const aiResponse = await generateAIResponse(userInput)
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -66,14 +69,36 @@ export default function AIChatPage() {
       // Auto-register if enabled
       if (autoRegister) {
         try {
+          // Ensure wallet is connected
+          if (!storyProtocol.client) {
+            try {
+              await initStoryClientWithWallet()
+            } catch (error: any) {
+              throw new Error(`Wallet connection required: ${error.message || 'Please connect your wallet'}`)
+            }
+          }
+
+          // Get wallet address
+          let owner = '0x' + '0'.repeat(40)
+          if (typeof window !== 'undefined' && window.ethereum) {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+            if (accounts && accounts.length > 0) {
+              owner = accounts[0]
+            } else {
+              throw new Error('Please connect your wallet first')
+            }
+          } else {
+            throw new Error('Please install MetaMask or connect your wallet')
+          }
+
           const ipAsset = await storyProtocol.registerIP({
             hash: await calculateHash(aiResponse),
             metadata: {
-              title: `AI Output: ${input.substring(0, 50)}...`,
+              title: `AI Output: ${userInput.substring(0, 50)}...`,
               description: aiResponse,
               type: 'ai-output',
             },
-            owner: '0x' + '0'.repeat(40),
+            owner: owner,
           })
 
           setMessages((prev) =>
@@ -83,7 +108,7 @@ export default function AIChatPage() {
                 : msg
             )
           )
-        } catch (error) {
+        } catch (error: any) {
           console.error('Registration error:', error)
           setMessages((prev) =>
             prev.map((msg) =>
@@ -92,11 +117,22 @@ export default function AIChatPage() {
                 : msg
             )
           )
+          alert(`Failed to register IP: ${error.message || 'Please connect your wallet'}`)
         }
-      } else {
-        setIsLoading(false)
       }
-    }, 1000)
+    } catch (error: any) {
+      console.error('AI response error:', error)
+      // Fallback response
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `I apologize, but I encountered an error processing your request: "${userInput}". Please try again.`,
+        timestamp: Date.now(),
+      }
+      setMessages((prev) => [...prev, fallbackMessage])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const calculateHash = async (text: string): Promise<string> => {
@@ -115,6 +151,28 @@ export default function AIChatPage() {
     )
 
     try {
+      // Ensure wallet is connected
+      if (!storyProtocol.client) {
+        try {
+          await initStoryClientWithWallet()
+        } catch (error: any) {
+          throw new Error(`Wallet connection required: ${error.message || 'Please connect your wallet'}`)
+        }
+      }
+
+      // Get wallet address
+      let owner = '0x' + '0'.repeat(40)
+      if (typeof window !== 'undefined' && window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        if (accounts && accounts.length > 0) {
+          owner = accounts[0]
+        } else {
+          throw new Error('Please connect your wallet first')
+        }
+      } else {
+        throw new Error('Please install MetaMask or connect your wallet')
+      }
+
       const ipAsset = await storyProtocol.registerIP({
         hash: await calculateHash(content),
         metadata: {
@@ -122,7 +180,7 @@ export default function AIChatPage() {
           description: content,
           type: 'ai-output',
         },
-        owner: '0x' + '0'.repeat(40),
+        owner: owner,
       })
 
       setMessages((prev) =>
@@ -130,13 +188,14 @@ export default function AIChatPage() {
           msg.id === messageId ? { ...msg, ipAsset, isRegistering: false } : msg
         )
       )
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error)
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === messageId ? { ...msg, isRegistering: false } : msg
         )
       )
+      alert(`Failed to register IP: ${error.message || 'Please connect your wallet'}`)
     }
   }
 
