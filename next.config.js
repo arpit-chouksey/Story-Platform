@@ -10,6 +10,10 @@ const nextConfig = {
     };
     return config;
   },
+  devIndicators: {
+    buildActivity: true,
+    buildActivityPosition: 'bottom-right',
+  },
 };
 
 module.exports = nextConfig;
