@@ -61,8 +61,8 @@ A comprehensive Web3 IP (Intellectual Property) management platform with Story P
 ### Next.js Configuration
 The `next.config.js` has been configured for Replit:
 - Runs on port 5000 with host `0.0.0.0`
-- Allows cross-origin requests from Replit proxy (`allowedDevOrigins: ['*']`)
 - Webpack fallbacks for Node.js modules (fs, net, tls)
+- Development indicators enabled for build activity
 
 ### Workflow
 - **Name**: Next.js Dev Server
