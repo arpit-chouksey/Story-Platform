@@ -132,7 +132,7 @@ export class StoryProtocolSDK {
       } as any)
 
       // Extract IP ID from response
-      const ipId = response.ipId || response.txHash
+      const ipId = (response as any)?.ipId || (response as any)?.txHash || (response as any)?.ip?.ipId || Date.now().toString()
       
       if (!ipId) {
         throw new Error('Invalid response from Story Protocol - no IP ID returned')
@@ -153,18 +153,20 @@ export class StoryProtocolSDK {
         },
       }
     } catch (error: any) {
-      console.error('Failed to register IP asset:', error)
+      console.error('Failed to register IP asset:', error, JSON.stringify(error))
       
       // Better error messages
-      if (error.message?.includes('wallet') || error.message?.includes('account')) {
+      const errorMsg = error?.message || error?.reason || JSON.stringify(error) || 'Unknown error'
+      
+      if (errorMsg.includes('wallet') || errorMsg.includes('account')) {
         throw new Error('Wallet not properly connected. Please reconnect and try again.')
       }
       
-      if (error.message?.includes('insufficient') || error.message?.includes('gas')) {
+      if (errorMsg.includes('insufficient') || errorMsg.includes('gas')) {
         throw new Error('Insufficient funds. Please ensure you have enough tokens for gas fees.')
       }
       
-      throw new Error(error.message || 'Failed to register IP asset. Please try again.')
+      throw new Error(errorMsg || 'Failed to register IP asset. Please try again.')
     }
   }
 
