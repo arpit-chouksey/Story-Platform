@@ -1,12 +1,11 @@
 /**
- * Wallet Connection for Story Protocol
- * Handles client-side wallet connections (MetaMask, WalletConnect, etc.)
+ * Wallet Connection for Story Protocol - Fixed for v1.4.2
  */
 
 'use client'
 
-import { StoryClient, StoryConfig } from '@story-protocol/core-sdk'
-import { http, createWalletClient, custom } from 'viem'
+import { StoryClient } from '@story-protocol/core-sdk'
+import { createWalletClient, custom } from 'viem'
 import { storyProtocol } from './story-protocol'
 
 /**
@@ -17,7 +16,6 @@ export async function initStoryClientWithWallet(): Promise<StoryClient> {
     throw new Error('Wallet connection is only available in the browser')
   }
 
-  // Check if wallet is available
   if (!window.ethereum) {
     throw new Error('No Web3 wallet found. Please install MetaMask or another Web3 wallet extension.')
   }
@@ -32,44 +30,31 @@ export async function initStoryClientWithWallet(): Promise<StoryClient> {
 
     const accountAddress = accounts[0] as `0x${string}`
 
-    // Create wallet client with the connected account
+    // Create wallet client
     const walletClient = createWalletClient({
       account: accountAddress,
       transport: custom(window.ethereum),
     })
 
-    // Verify account was created
     if (!walletClient.account || !walletClient.account.address) {
       throw new Error('Failed to create wallet client. Please try again.')
     }
 
-    // Get RPC URL and chain ID
     const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://aeneid-rpc.story.foundation'
-    const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || 'aeneid'
 
     console.log('Initializing Story Protocol client:', {
       account: walletClient.account.address,
       rpcUrl,
-      chainId,
+      chainId: 'aeneid',
     })
 
-    // Create Story Protocol config
-    const config: StoryConfig = {
-      account: walletClient.account,
-      transport: http(rpcUrl),
-      chainId: chainId as any,
-    }
-
-    // Initialize Story Protocol client
-    let client: StoryClient
-    try {
-      client = StoryClient.newClient(config)
-    } catch (sdkError: any) {
-      console.error('Story Protocol SDK error:', sdkError)
-      throw new Error(`Failed to initialize Story Protocol SDK: ${sdkError.message || 'Unknown error'}`)
-    }
+    // Create Story Protocol client with wallet for v1.4.2
+    const client = StoryClient.newClientUseWallet({
+      wallet: walletClient as any,
+      transport: custom(window.ethereum),
+      chainId: 'aeneid',
+    } as any)
     
-    // Verify client was created
     if (!client) {
       throw new Error('Story Protocol client is null after initialization')
     }
@@ -82,7 +67,6 @@ export async function initStoryClientWithWallet(): Promise<StoryClient> {
   } catch (error: any) {
     console.error('Failed to initialize Story Protocol client with wallet:', error)
     
-    // Provide user-friendly error messages
     if (error.code === 4001) {
       throw new Error('Wallet connection rejected. Please approve the connection request.')
     }
@@ -109,4 +93,3 @@ declare global {
     }
   }
 }
-
