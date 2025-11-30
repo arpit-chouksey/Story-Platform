@@ -14,9 +14,6 @@ const nextConfig = {
     buildActivity: true,
     buildActivityPosition: 'bottom-right',
   },
-  experimental: {
-    allowedDevOrigins: ['*'],
-  },
 };
 
 module.exports = nextConfig;
